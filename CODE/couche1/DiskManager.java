@@ -43,7 +43,7 @@ public class DiskManager {
       try {
         creerFichier(i);
       } catch (Exception e) {
-        e.printStackTrace();
+        System.out.println(e.getMessage());
       }
     }
   }
