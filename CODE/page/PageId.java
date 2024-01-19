@@ -16,12 +16,6 @@ public class PageId implements Serializable{
 	 * @param pageIdx
 	 */
 	public PageId(int fileIdx, int pageIdx) throws Exception{
-		if(fileIdx<1){
-			throw new Exception("L'id du fichier est icnorrecte");
-		}
-		if (pageIdx<0) {
-			throw new Exception("L'id de la page est incorrecte");
-		}
 		this.FileIdx = fileIdx; 
 		this.PageIdx = pageIdx;
 	}

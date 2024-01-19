@@ -51,6 +51,7 @@ public class DiskManager {
   public void viderDiskManager() {
     nb_page_allouer = 0;
     page_dipo = new ArrayList<>();
+    listIdFile=new ArrayList<>();
     dm = null;
   }
 
@@ -76,6 +77,9 @@ public class DiskManager {
    * @param fichierId contient l'id du fichier soit son numéro
    */
   public void creerFichier(int fichierId) throws Exception {
+    if (fichierId>DBParams.DMFileCount) {
+      throw new Exception("L 'id de fichier ne pas être supérieur à "+DBParams.DMFileCount);
+    }
     if (listIdFile.size() == 0) {
       if (!(fichierId == 1)) {
         throw new Exception("L'id du premier fichier doit être par 1");
@@ -120,7 +124,7 @@ public class DiskManager {
       page_dipo.remove(0);
       return dispoPageId;
     }
-	
+
     String chemin = Checkeur.plus_petit_fichier();
     File fichier = new File(chemin);
     try (RandomAccessFile raf = new RandomAccessFile(fichier, "rwd");) {
@@ -166,7 +170,9 @@ public class DiskManager {
         for (int i = 0; i < DBParams.SGBDPageSize; i++) {
           buff.put(raf.readByte());
         }
-      } catch (Exception e) {}
+      } catch (Exception e) {
+
+      }
     }
   }
 
@@ -189,6 +195,7 @@ public class DiskManager {
         while (buff.hasRemaining()) {
           raf.write(buff.get());
         }
+        buff.position(0);
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -202,7 +209,7 @@ public class DiskManager {
    * @param pageId un PageId
    */
   public void DeallocPage(PageId pageId) {
-    if (pageId != null) {
+    if (pageId != null && nb_page_allouer > 0) {
       File fichier = new File(
         DBParams.DBPath + File.separator + "F" + pageId.getFileIdx() + ".data"
       );
@@ -211,8 +218,8 @@ public class DiskManager {
         byte[] donnee = new byte[DBParams.SGBDPageSize];
         raf.write(donnee);
         this.page_dipo.add(pageId);
-        this.nb_page_allouer -= 1;
-      } catch (Exception e) {
+        nb_page_allouer--;
+      } catch (IOException e) {
         e.printStackTrace();
       }
     }
