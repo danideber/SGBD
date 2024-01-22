@@ -89,7 +89,7 @@ public class Record {
 		// Je me positionne à la position pos
 		buff.position(pos);
 
-		// On av parcourir en nous basant sur le nombre de colonnes
+		// On va parcourir en nous basant sur le nombre de colonnes
 		for (int i = 0; i < tableInfo.getNb_col(); i++) {
 			// Affectation de svaleurs
 			type_col = tableInfo.getCol_info().get(i).getType_col();
