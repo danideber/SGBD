@@ -7,33 +7,82 @@ import java.util.List;
 import CODE.couche3.TableInfo;
 import CODE.parametre.DBParams;
 
+/**
+ * 
+ */
 public class Record {
+	/**
+	 * Attribut correspondant à une tableInfo
+	 */
 	private TableInfo tableInfo;
+
+	/**
+	 * Liste des valeurs du record
+	 */
 	private List<String> recvalues;
 
-	public Record(TableInfo tableInfo) {
-		this.tableInfo = tableInfo;
-		recvalues = new ArrayList<String>();
+	/**
+	 * 
+	 * @param tableInfo
+	 */
+	public Record(TableInfo tableInfo) throws NullPointerException {
+		if (tableInfo==null) {
+			throw new NullPointerException("La tableInfo est nulle");
+		}
+		else{
+			this.tableInfo = tableInfo;
+			recvalues = new ArrayList<String>();
+		}
+
 	}
 
-	public Record(TableInfo tableInfo, List<String> listValues) {
+	/**
+	 * 
+	 * @param tableInfo
+	 * @param listValues
+	 */
+	public Record(TableInfo tableInfo, List<String> listValues) throws NullPointerException {
+		if (tableInfo==null) {
+			throw new NullPointerException("La tableInfo est nulle");	
+		}
+		else{
 		this.tableInfo = tableInfo;
+
 		this.recvalues = new ArrayList<String>();
 
 		for (int i = 0; i < listValues.size(); i++) {
 			recvalues.add(listValues.get(i));
 		}
 		this.recvalues = listValues;
+		}
 	}
 
+	/**
+	 * 
+	 * @return
+	 */
 	public List<String> getRecvalues() {
 		return this.recvalues;
 	}
 
+	/**
+	 * 
+	 * @return
+	 */
 	public TableInfo getTableInfo() {
 		return this.tableInfo;
 	}
 
+	public void setTableInfo(TableInfo tableInfo){
+		this.tableInfo=tableInfo;
+	}
+
+	/**
+	 * 
+	 * @param buff
+	 * @param pos
+	 * @return
+	 */
 	public int writeToBuffer(ByteBuffer buff, int pos) {
 		int nb_octets = 0, tailleCol = 0;
 		String type_col = "", val_record = "";
@@ -79,26 +128,6 @@ public class Record {
 			}
 
 			else {
-				// if (tailleCol > val_record.length()) {
-				// tableInfo.getCol_info().get(i).setTaille_col(val_record.length());
-				// tailleCol = tableInfo.getCol_info().get(i).getTaille_col();
-				// }
-				// for (int j = 0; j < tailleCol; j++) {
-				// buff.putChar(val_record.charAt(j));
-				// nb_octets += 2;
-
-				// }
-
-				// for (int j = 0; j < tailleCol; j++) {
-				// if (j>=val_record.length()) {
-				// buff.putChar(' ');
-				// }
-				// else{
-
-				// buff.putChar(val_record.charAt(j));
-				// }
-				// nb_octets += 2;
-
 				for (int j = 0; j < tailleCol; j++) {
 					if (val_record.length() < tailleCol && j >= val_record.length()) {
 						buff.putChar(' ');
@@ -117,6 +146,13 @@ public class Record {
 		return nb_octets;
 	}
 
+
+	/**
+	 * 
+	 * @param buff
+	 * @param pos
+	 * @return
+	 */
 	public int readFromBuffer(ByteBuffer buff, int pos) {
 		int nb_octets = 0, tailleCol = 0;
 		;
@@ -180,10 +216,15 @@ public class Record {
 		return nb_octets;
 	}
 
+
+	/**
+	 * 
+	 * @param valuesRecord
+	 */
 	public void setRecvalues(List<String> valuesRecord) {
 		this.recvalues = valuesRecord;
 	}
 
-	// public int getIndice
+
 
 }

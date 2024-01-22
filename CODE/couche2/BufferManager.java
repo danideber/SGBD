@@ -132,13 +132,12 @@ public class BufferManager {
       all_frames[indice].decrePinCount();
     } else {
       all_frames[indice].decrePinCount();
-      all_frames[indice].setDirty(valdirty);
-    }
-    if (valdirty) {
-      dm.WritePage(
-        all_frames[indice].getPageId(),
-        all_frames[indice].getBuffer()
-      );
+
+      //Si le dirty au niveau de la frame n'est pas true, on le fait passer à true
+      if(!all_frames[indice].isDirty()){
+        all_frames[indice].setDirty(valdirty);
+      }
+
     }
   }
 

@@ -92,15 +92,26 @@ public class RecordIterator {
         BufferManager.getInstance().FreePage(pageId, false);
     }
 
+    /**
+     * 
+     */
     public void Reset() {
         indiceSuiteRecord=0;
         numRecord=0;
     }
 
+    /**
+     * 
+     * @return
+     */
     public int getNbSlotDirectory() {
         return nbRecord;
     }
 
+    /**
+     * 
+     * @return
+     */
     public TableInfo getTableInfo() {
         return tabInfo;
     }

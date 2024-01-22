@@ -1,457 +1,540 @@
 package CODE.couche3;
 
+import CODE.couche1.DiskManager;
+import CODE.couche2.BufferManager;
+import CODE.couche3.record.Record;
+import CODE.couche3.record.RecordId;
+import CODE.page.PageId;
+import CODE.parametre.DBParams;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import CODE.couche1.DiskManager;
-import CODE.couche2.BufferManager;
-import CODE.couche3.record.RecordId;
-import CODE.couche3.record.Record;
-import CODE.page.PageId;
-import CODE.parametre.DBParams;
-
 public class FileManager {
-    private static FileManager fm = null;
 
-    private FileManager() {
+  /**
+   * attribut statique correspondant au FileManager
+   */
+  private static FileManager fm = null;
 
+  /**
+   * Constructeur du FileManager
+   */
+  private FileManager() {}
+
+  /**
+   *
+   * @return Objet de type FileManager
+   */
+  public static FileManager getInstance() {
+    if (fm == null) {
+      fm = new FileManager();
     }
 
-    public static FileManager instancie_moi() {
-        if (fm == null) {
-            fm = new FileManager();
-        }
+    return fm;
+  }
 
-        return fm;
+  /**
+   * Permet de trouver l'entrée M correspondant au nombre de records dans une page
+   *  de données
+   *
+   * @return le nombre d'entrées
+   */
+  public int nombreEntree(ByteBuffer biteBuffer) {
+    biteBuffer.position(DBParams.SGBDPageSize - 8);
+    int m = biteBuffer.getInt();
 
-    }
+    return m;
+  }
 
-    /**
-     * Peremt de trouver l'entrée M correspondant au nombre de record dans une page
-     * data
-     * 
-     * @return
-     */
-    public int nombreEntree(ByteBuffer biteBuffer) {
+  /**
+   * Méthode permettant de trouver l'espace disponible sur une page de données
+   *
+   * @param dataPage page de données
+   * @param bm BufferManager
+   * @return espace disponible
+   */
+  public int espaceDispo(PageId dataPage, BufferManager bm) {
+    ByteBuffer biteBuffer = bm.GetPage(dataPage);
+    biteBuffer.position(DBParams.SGBDPageSize - 4);
 
-        biteBuffer.position(DBParams.SGBDPageSize - 8);
-        int m = biteBuffer.getInt();
+    int positDebut = biteBuffer.getInt();
 
-        return m;
-    }
+    biteBuffer.position(DBParams.SGBDPageSize - 8);
 
-    public int espaceDispo(PageId dataPage, ByteBuffer biteBuffer) {
+    int m = nombreEntree(biteBuffer);
 
-        biteBuffer.position(DBParams.SGBDPageSize - 4);
-        int positDebut = biteBuffer.getInt();
-        biteBuffer.position(DBParams.SGBDPageSize - 8);
-        int m = nombreEntree(biteBuffer);
-        int positionFin = DBParams.SGBDPageSize - 8 - m * 8;
+    int positionFin = (DBParams.SGBDPageSize - 8) - (m * 8);
 
-        return positionFin - positDebut;
+    bm.FreePage(dataPage, false);
 
-    }
+    return positionFin - positDebut;
+  }
 
-    public int tailleToutRecord(PageId dataPage, BufferManager bm, ByteBuffer biteBuffer) {
+  /**
+   *
+   * @param dataPage page de données
+   * @param bm BufferManager
+   * @param biteBuffer
+   * @return
+   */
+  public int tailleToutRecord(PageId dataPage, BufferManager bm) {
+    ByteBuffer biteBuffer = bm.GetPage(dataPage);
+    biteBuffer.position(DBParams.SGBDPageSize - 4);
+    int positDebut = biteBuffer.getInt();
 
-        biteBuffer.position(DBParams.SGBDPageSize - 4);
-        int positDebut = biteBuffer.getInt();
+    bm.FreePage(dataPage, false);
+    return positDebut - 8;
+  }
 
-        return positDebut - 8;
+  /**
+   * Méthode permettant de trouver la position de début de l'espace disponible
+   * @param biteBuffer
+   * @return position de début de l'espace disponible pour l'écriture
+   */
+  public int positionEcritureRecord(ByteBuffer biteBuffer) {
+    biteBuffer.position(DBParams.SGBDPageSize - 4);
+    int positDebut = biteBuffer.getInt();
 
-    }
+    return positDebut;
+  }
 
-    // C'est la position de début de l'espace disponible
-    public int posionEcritureRecord(ByteBuffer biteBuffer) {
+  /**
+   * Méthode pour déplacer une dataPage vers la liste des data page pleines
+   * @param dataPage page de données
+   * @param tabInfo tableInfo
+   * @throws Exception
+   */
+  public void deplacerToListePleine(PageId dataPage, TableInfo tabInfo)
+    throws Exception {
+    BufferManager bm = BufferManager.getInstance();
+    ByteBuffer bf = bm.GetPage(tabInfo.getHeaderPage());
 
-        biteBuffer.position(DBParams.SGBDPageSize - 4);
-        int positDebut = biteBuffer.getInt();
+    ByteBuffer bfData = bm.GetPage(tabInfo.getHeaderPage());
 
-        return positDebut;
-    }
+    bf.position(8);
 
-    public void deplacerToListePleine(PageId dataPage, TableInfo tabInfo) {
+    int fileId = bf.getInt();
+    int pageIx = bf.getInt();
 
-        // récupérer la page via le BufferManager
-        BufferManager bm = BufferManager.getInstance();
-        ByteBuffer bf = bm.GetPage(tabInfo.getHeaderPage());
+    int fileIdData = dataPage.getFileIdx();
+    int pageIxData = dataPage.getPageIdx();
 
-        ByteBuffer bfData = bm.GetPage(tabInfo.getHeaderPage());
-        // Ecrire
+    if (fileId == -1 && pageIx == -1) {
         bf.position(8);
-
-        int fileId = bf.getInt();
-        int pageIx = bf.getInt();
-
-        int fileIdData = dataPage.getFileIdx();
-        int pageIxData = dataPage.getPageIdx();
-
         bf.putInt(fileIdData);
         bf.putInt(pageIxData);
+    } else {
+      while (fileId != -1 && pageIx != -1) {
+        ByteBuffer byteBuffer = bm.GetPage(new PageId(fileId, pageIx));
+        byteBuffer.position(0);
+        fileId = byteBuffer.getInt();
+        pageIx = byteBuffer.getInt();
+        if (fileId == -1 && pageIx == -1) {
+          byteBuffer.position(0);
+          byteBuffer.putInt(fileIdData);
+          byteBuffer.putInt(pageIxData);
+          bm.FreePage(new PageId(fileId, pageIx), true);
+        } else {
+          bm.FreePage(new PageId(fileId, pageIx), false);
+        }
+      }
+    }   
 
-        bfData.position(0);
-        bfData.putInt(fileId);
-        bfData.putInt(pageIx);
+    bfData.position(0);
+    bfData.putInt(fileId);
+    bfData.putInt(pageIx);
 
-        bm.FreePage(tabInfo.getHeaderPage(), true);
-        bm.FreePage(dataPage, true);
-    }
+    bm.FreePage(tabInfo.getHeaderPage(), true);
+    bm.FreePage(dataPage, true);
+  }
 
-    /**
-     * Cette méthode devra gérer :
-     * • L’allocation d’une nouvelle page via AllocPage du DiskManager.
-     * C’est le PageId rendu par AllocPage qui devra aussi être rendu par
-     * createNewHeaderPage
-     * • L’écriture dans la page allouée de deux PageIds « factices », correspondant
-     * à des listes de
-     * pages de données initialement vides.
-     * Pour écrire, il faudra d’abord récupérer la page via le BufferManager, puis
-     * la libérer auprès
-     * du BufferManager (avec le bon flag dirty).
-     * 
-     * @return PageId
-     * @throws Exception 
-     */
-    public PageId createNewHeaderPage() throws Exception {
-        // Allocation d’une nouvelle page via AllocPage du DiskManage
-        DiskManager dm = DiskManager.getInstance();
-        PageId headerPage = dm.AllocPage();
+  /**
+   * Cette méthode devra gérer :
+   * • L’allocation d’une nouvelle page via AllocPage du DiskManager.
+   * C’est le PageId rendu par AllocPage qui devra aussi être rendu par
+   * createNewHeaderPage
+   * • L’écriture dans la page allouée de deux PageIds « factices », correspondant
+   * à des listes de
+   * pages de données initialement vides.
+   * Pour écrire, il faudra d’abord récupérer la page via le BufferManager, puis
+   * la libérer auprès
+   * du BufferManager (avec le bon flag dirty).
+   *
+   * @return PageId
+   * @throws Exception
+   */
+  public PageId createNewHeaderPage() throws Exception {
+    // Allocation d’une nouvelle page via AllocPage du DiskManage
+    DiskManager dm = DiskManager.getInstance();
+    PageId headerPage = dm.AllocPage();
 
-        // récupérer la page via le BufferManager
-        BufferManager bm = BufferManager.getInstance();
-        ByteBuffer bf = bm.GetPage(headerPage);
+    // récupérer la page via le BufferManager
+    BufferManager bm = BufferManager.getInstance();
+    ByteBuffer bf = bm.GetPage(headerPage);
 
-        PageId page1 = new PageId(-1, -1);
-        PageId page2 = new PageId(-1, -1);
+    PageId page1 = new PageId(-1, -1);
+    PageId page2 = new PageId(-1, -1);
 
-        bf.position(0);
-        // Ecrire
-        bf.putInt(page1.getFileIdx());
-        bf.putInt(page1.getPageIdx());
+    bf.position(0);
+    bf.putInt(page1.getFileIdx());
+    bf.putInt(page1.getPageIdx());
 
-        bf.putInt(page2.getFileIdx());
-        bf.putInt(page2.getPageIdx());
+    bf.putInt(page2.getFileIdx());
+    bf.putInt(page2.getPageIdx());
 
-        // Je me repositionne au début du ByteBuffer
-        bf.position(0);
+    // Libérer le buffer avec le bon flag dirty afin de modifier mon headerPage
+    bm.FreePage(headerPage, true);
 
-        // Libérer le buffer avec le bon flag dirty afin de modifier mon headerPage
-        bm.FreePage(headerPage, true);
+    return headerPage;
+  }
 
-        return headerPage;
-    }
+  /**
+   * ---------------------------------------- A continuer ----------------------------------------------
+   * Cette méthode devra rajouter une page de données « vide » au Heap File
+   * correspondant à la relation
+   * identifiée par tabInfo, et retourner le PageId de cette page.
+   * Pour cela, elle devra :
+   * • allouer une nouvelle page via AllocPage du DiskManager. C’est le PageId
+   * rendu par
+   * AllocPage qui devra aussi être rendu par addDataPage
+   * • chaîner la page dans la liste des pages « où il reste de la place » ; pour
+   * cela, il faudra lire
+   * et écrire des PageIds dans la page nouvellement créée, ainsi que (suivant
+   * votre stratégie)
+   * dans d’autres pages
+   *
+   * @param tabInfo
+   * @return
+   * @throws Exception
+   */
+  public PageId addDataPage(TableInfo tabInfo) throws Exception {
+    // Allocation d’une nouvelle page via AllocPage du DiskManage
+    DiskManager dm = DiskManager.getInstance();
+    PageId dataPage = dm.AllocPage();
 
-    /**
-     * Cette méthode devra rajouter une page de données « vide » au Heap File
-     * correspondant à la relation
-     * identifiée par tabInfo, et retourner le PageId de cette page.
-     * Pour cela, elle devra :
-     * • allouer une nouvelle page via AllocPage du DiskManager. C’est le PageId
-     * rendu par
-     * AllocPage qui devra aussi être rendu par addDataPage
-     * • chaîner la page dans la liste des pages « où il reste de la place » ; pour
-     * cela, il faudra lire
-     * et écrire des PageIds dans la page nouvellement créée, ainsi que (suivant
-     * votre stratégie)
-     * dans d’autres pages
-     * 
-     * @param tabInfo
-     * @return
-     */
-    public PageId addDataPage(TableInfo tabInfo) {
-        // Allocation d’une nouvelle page via AllocPage du DiskManage
-        DiskManager dm = DiskManager.getInstance();
-        PageId dataPage = dm.AllocPage();
+    int fileId = 0, pageIx = 0, fileIdData = 0, pageIxData = 0;
 
-        int fileId = 0, pageIx = 0, fileIdData = 0, pageIxData = 0;
+    // récupérer la page via le BufferManager
+    BufferManager bm = BufferManager.getInstance();
 
-        // récupérer la page via le BufferManager
-        BufferManager bm = BufferManager.getInstance();
+    ByteBuffer bHeader = bm.GetPage(tabInfo.getHeaderPage());
 
-        ByteBuffer bHeader = bm.GetPage(tabInfo.getHeaderPage());
+    bHeader.position(0);
+    fileId = bHeader.getInt();
+    pageIx = bHeader.getInt();
 
-        bHeader.position(0);
-        fileId = bHeader.getInt();
-        pageIx = bHeader.getInt();
+    ByteBuffer bfData = bm.GetPage(dataPage);
+    // Ecrire
 
-        ByteBuffer bfData = bm.GetPage(dataPage);
-        // Ecrire
+    fileIdData = dataPage.getFileIdx();
+    pageIxData = dataPage.getPageIdx();
 
-        fileIdData = dataPage.getFileIdx();
-        pageIxData = dataPage.getPageIdx();
-
+    if (fileId == -1 && pageIx == -1) {
         bHeader.position(0);
         bHeader.putInt(fileIdData);
         bHeader.putInt(pageIxData);
-
-        bfData.position(0);
-        bfData.putInt(fileId);
-        bfData.putInt(pageIx);
-
-        bfData.position(DBParams.SGBDPageSize - 4);
-        bfData.putInt(8);
-
-        bm.FreePage(dataPage, true);
         bm.FreePage(tabInfo.getHeaderPage(), true);
-
-        return dataPage;
+        
+    } else {
+      while (fileId != -1 && pageIx != -1) {
+        ByteBuffer byteBuffer = bm.GetPage(new PageId(fileId, pageIx));
+        byteBuffer.position(0);
+        fileId = byteBuffer.getInt();
+        pageIx = byteBuffer.getInt();
+        if (fileId == -1 && pageIx == -1) {
+          byteBuffer.position(0);
+          byteBuffer.putInt(fileIdData);
+          byteBuffer.putInt(pageIxData);
+          bm.FreePage(new PageId(fileId, pageIx), true);
+        } else {
+          bm.FreePage(new PageId(fileId, pageIx), false);
+        }
+      }
     }
 
-    public PageId getFreeDatPageId(TableInfo tableInfo, int sizeRecord) throws Exception {
+    bfData.position(0);
+    bfData.putInt(fileId);
+    bfData.putInt(pageIx);
 
-        BufferManager bm = BufferManager.getInstance();
+    bfData.position(DBParams.SGBDPageSize - 4);
+    bfData.putInt(8);
 
-        // PageId dataPage = null;
-        // int fileIdData = 0;
-        // int pageIdData = 0;
+    bm.FreePage(dataPage, true);
+    bm.FreePage(tabInfo.getHeaderPage(), true);
 
-        // // Je récupère la header page
-        // ByteBuffer bBer = bm.GetPage(tableInfo.getHeaderPage());
-        // bBer.position(0);
-        // fileIdData = bBer.getInt();
-        // pageIdData = bBer.getInt();
+    return dataPage;
+  }
 
-        // if (fileIdData == -1 && pageIdData == -1) {
-        //     PageId nouvPage = addDataPage(tableInfo);
-        //     tableInfo.setHeaderPage(nouvPage);
-        //     return nouvPage;
-        //     // return addDataPage(tableInfo);
-        // }
+  /**
+   *
+   * @param tableInfo
+   * @param sizeRecord
+   * @return
+   * @throws Exception
+   */
+  public PageId getFreeDatPageId(TableInfo tableInfo, int sizeRecord)
+    throws Exception {
+    BufferManager bm = BufferManager.getInstance();
 
-        // int espaceDis = 0;
+    // PageId dataPage = null;
+    // int fileIdData = 0;
+    // int pageIdData = 0;
 
-        // do {
-        //     dataPage = new PageId(fileIdData, pageIdData);
-        //     espaceDis = espaceDispo(dataPage, bBer);
-        //     if (espaceDis >= sizeRecord) {
-        //         System.out.println("ici");
-        //         bm.FreePage(tableInfo.getHeaderPage(), false);
-        //         break;
-        //     }
-        //     else{
-        //         System.out.println("uhhuhu");
-        //     }
-        //     bBer.clear();
-        //     bm.FreePage(dataPage, false);
-        //     bBer = bm.GetPage(dataPage);
-        //     bBer.position(0);
-        //     fileIdData = bBer.getInt();
-        //     pageIdData = bBer.getInt();
+    // // Je récupère la header page
+    // ByteBuffer bBer = bm.GetPage(tableInfo.getHeaderPage());
+    // bBer.position(0);
+    // fileIdData = bBer.getInt();
+    // pageIdData = bBer.getInt();
 
-        // } while (fileIdData != -1 && pageIdData != -1);
-        PageId headerPage=tableInfo.getHeaderPage();
-        ByteBuffer headerByte=bm.GetPage(headerPage);
-        headerByte.position(0);
-        int fileId=headerByte.getInt();
-        int pageId=headerByte.getInt();
+    // if (fileIdData == -1 && pageIdData == -1) {
+    //     PageId nouvPage = addDataPage(tableInfo);
+    //     tableInfo.setHeaderPage(nouvPage);
+    //     return nouvPage;
+    //     // return addDataPage(tableInfo);
+    // }
 
-        bm.FreePage(headerPage, false);
+    // int espaceDis = 0;
 
-        while (fileId!=-1 && pageId!=-1) {
-         
-        PageId dataPageId=new PageId(fileId, pageId);
-       ByteBuffer dataPageByte=bm.GetPage(dataPageId);
+    // do {
+    //     dataPage = new PageId(fileIdData, pageIdData);
+    //     espaceDis = espaceDispo(dataPage, bBer);
+    //     if (espaceDis >= sizeRecord) {
+    //         System.out.println("ici");
+    //         bm.FreePage(tableInfo.getHeaderPage(), false);
+    //         break;
+    //     }
+    //     else{
+    //         System.out.println("uhhuhu");
+    //     }
+    //     bBer.clear();
+    //     bm.FreePage(dataPage, false);
+    //     bBer = bm.GetPage(dataPage);
+    //     bBer.position(0);
+    //     fileIdData = bBer.getInt();
+    //     pageIdData = bBer.getInt();
 
-       int m=nombreEntree(dataPageByte);
-       System.out.println("m: "+m);
+    // } while (fileIdData != -1 && pageIdData != -1);
+    PageId headerPage = tableInfo.getHeaderPage();
+    ByteBuffer headerByte = bm.GetPage(headerPage);
+    headerByte.position(0);
+    int fileId = headerByte.getInt();
+    int pageId = headerByte.getInt();
 
-       int espaceDis=espaceDispo(dataPageId, dataPageByte);
-       bm.FreePage(dataPageId, false);
+    bm.FreePage(headerPage, false);
 
-       if (espaceDis>=sizeRecord) {
+    while (fileId != -1 && pageId != -1) {
+      PageId dataPageId = new PageId(fileId, pageId);
+      ByteBuffer dataPageByte = bm.GetPage(dataPageId);
+
+      int m = nombreEntree(dataPageByte);
+      System.out.println("m: " + m);
+
+      int espaceDis = espaceDispo(dataPageId, bm);
+      bm.FreePage(dataPageId, false);
+
+      if (espaceDis >= sizeRecord) {
         return dataPageId;
-       }
-       else{
+      } else {
         return fm.addDataPage(tableInfo);
-       }
-
-        }
-
-        return null;
-
-
+      }
     }
 
-    public RecordId writeRecordToDataPage(Record record, PageId pageId) {
+    return null;
+  }
 
-        BufferManager bm = BufferManager.getInstance();
+  /**
+   *
+   * @param record
+   * @param pageId
+   * @return
+   * @throws Exception
+   */
+  public RecordId writeRecordToDataPage(Record record, PageId pageId)
+    throws Exception {
+    BufferManager bm = BufferManager.getInstance();
 
-        ByteBuffer byteBuffer = bm.GetPage(pageId);
+    ByteBuffer byteBuffer = bm.GetPage(pageId);
 
-        record.writeToBuffer(byteBuffer, posionEcritureRecord(byteBuffer));
+    record.writeToBuffer(byteBuffer, positionEcritureRecord(byteBuffer));
 
-        if (espaceDispo(pageId, byteBuffer) == 0) {
-            deplacerToListePleine(pageId, record.getTableInfo());
-        }
-
-        bm.FreePage(pageId, true);
-        return new RecordId(record);
+    if (espaceDispo(pageId, bm) == 0) {
+      deplacerToListePleine(pageId, record.getTableInfo());
     }
 
-    // A améliorer
-    public List<Record> getRecordsInDataPage(TableInfo tabInfo, PageId pageId) {
+    bm.FreePage(pageId, true);
+    return new RecordId(record);
+  }
 
-        List<Record> listeRecord = new ArrayList<>();
-        int tailleRecord = 8, positionRecup = 0;
-        ByteBuffer byteBuff = null;
-        ByteBuffer byteBuffRecup = null;
-        BufferManager buffManag = BufferManager.getInstance();
+  /**
+   *
+   * @param tabInfo
+   * @param pageId
+   * @return
+   */
+  public List<Record> getRecordsInDataPage(TableInfo tabInfo, PageId pageId) {
+    List<Record> listeRecord = new ArrayList<>();
+    int tailleRecord = 8, positionRecup = 0;
+    ByteBuffer byteBuff = null;
+    ByteBuffer byteBuffRecup = null;
+    BufferManager buffManag = BufferManager.getInstance();
 
-        Record monRecord = null;
+    Record monRecord = null;
 
-        byteBuff = buffManag.GetPage(pageId);
-        byteBuffRecup = byteBuff;
+    byteBuff = buffManag.GetPage(pageId);
+    byteBuffRecup = byteBuff;
 
-        byteBuff.position(8);
+    byteBuff.position(8);
 
-        positionRecup = DBParams.SGBDPageSize - 8;
-        int iteration = nombreEntree(byteBuffRecup);
-        byteBuffRecup.position(positionRecup);
+    positionRecup = DBParams.SGBDPageSize - 8;
+    int iteration = nombreEntree(byteBuffRecup);
+    byteBuffRecup.position(positionRecup);
 
-        for (int index = 0; index < iteration; index++) {
+    for (int index = 0; index < iteration; index++) {
+      byteBuffRecup.position(positionRecup);
 
-            byteBuffRecup.position(positionRecup);
+      monRecord = new Record(tabInfo);
 
-            monRecord = new Record(tabInfo);
-
-            tailleRecord += monRecord.readFromBuffer(byteBuff, tailleRecord);
-            List<String> valuesRecord = monRecord.getRecvalues();
-            listeRecord.add(new Record(tabInfo));
-            listeRecord.get(index).setRecvalues(valuesRecord);
-            // listeRecord.get(listeRecord.size()-1).setRecvalues(valuesRecord);
-            // byteBuffRecup.position(positionRecup);
-            // tailleRecord += byteBuffRecup.getInt();
-            positionRecup -= 8;
-
-        }
-
-        buffManag.FreePage(pageId, false);
-
-        return listeRecord;
-
+      tailleRecord += monRecord.readFromBuffer(byteBuff, tailleRecord);
+      List<String> valuesRecord = monRecord.getRecvalues();
+      listeRecord.add(new Record(tabInfo));
+      listeRecord.get(index).setRecvalues(valuesRecord);
+      // listeRecord.get(listeRecord.size()-1).setRecvalues(valuesRecord);
+      // byteBuffRecup.position(positionRecup);
+      // tailleRecord += byteBuffRecup.getInt();
+      positionRecup -= 8;
     }
 
-    public List<PageId> getDataPages(TableInfo tabInfo) throws Exception {
+    buffManag.FreePage(pageId, false);
 
-        List<PageId> listeDataPage = new ArrayList<>();
+    return listeRecord;
+  }
 
-        BufferManager bm = BufferManager.getInstance();
+  public List<PageId> getDataPages(TableInfo tabInfo) throws Exception {
+    List<PageId> listeDataPage = new ArrayList<>();
 
-        PageId dataPage = null;
-        int fileIdData = 0;
-        int pageIdData = 0;
+    BufferManager bm = BufferManager.getInstance();
 
-        ByteBuffer bBer = bm.GetPage(tabInfo.getHeaderPage());
-        bBer.position(0);
-        fileIdData = bBer.getInt();
-        pageIdData = bBer.getInt();
+    PageId dataPage = null;
+    int fileIdData = 0;
+    int pageIdData = 0;
 
-        while (fileIdData != -1 && pageIdData != -1) {
+    ByteBuffer bBer = bm.GetPage(tabInfo.getHeaderPage());
+    bBer.position(0);
+    fileIdData = bBer.getInt();
+    pageIdData = bBer.getInt();
 
-            dataPage = new PageId(fileIdData, pageIdData);
+    while (fileIdData != -1 && pageIdData != -1) {
+      dataPage = new PageId(fileIdData, pageIdData);
 
-            listeDataPage.add(dataPage);
+      listeDataPage.add(dataPage);
 
-            bBer.clear();
-            bm.FreePage(dataPage, false);
-            bBer = bm.GetPage(dataPage);
-            bBer.position(0);
-            fileIdData = bBer.getInt();
-            pageIdData = bBer.getInt();
-
-        }
-
-        bm.FreePage(tabInfo.getHeaderPage(), false);
-
-        bBer = bm.GetPage(tabInfo.getHeaderPage());
-        bBer.position(8);
-        fileIdData = bBer.getInt();
-        pageIdData = bBer.getInt();
-
-        while (fileIdData != -1 && pageIdData != -1) {
-
-            dataPage = new PageId(fileIdData, pageIdData);
-
-            listeDataPage.add(dataPage);
-
-            bBer.clear();
-            bm.FreePage(dataPage, false);
-            bBer = bm.GetPage(dataPage);
-            bBer.position(0);
-            fileIdData = bBer.getInt();
-            pageIdData = bBer.getInt();
-
-        }
-
-        return listeDataPage;
+      bBer.clear();
+      bm.FreePage(dataPage, false);
+      bBer = bm.GetPage(dataPage);
+      bBer.position(0);
+      fileIdData = bBer.getInt();
+      pageIdData = bBer.getInt();
     }
 
-    // A voir
-    // Je vais écrire le record dans une page de données avec assez d'espace (mon
-    // petit test)
-    public RecordId InsertRecordIntoTable(Record record) throws Exception {
-        BufferManager bm = BufferManager.getInstance();
+    bm.FreePage(tabInfo.getHeaderPage(), false);
 
-        // Je récupère la taille du record
-        int tailleRecord = record.writeToBuffer(ByteBuffer.allocate(DBParams.SGBDPageSize), 0);
+    bBer = bm.GetPage(tabInfo.getHeaderPage());
+    bBer.position(8);
+    fileIdData = bBer.getInt();
+    pageIdData = bBer.getInt();
 
-        // Obtenir la datapage avec assez d'espace
-        PageId pageAvecEspace = getFreeDatPageId(record.getTableInfo(), tailleRecord);
+    while (fileIdData != -1 && pageIdData != -1) {
+      dataPage = new PageId(fileIdData, pageIdData);
 
-        ByteBuffer byteBuffer = bm.GetPage(pageAvecEspace);
+      listeDataPage.add(dataPage);
 
-        int positionDebut = posionEcritureRecord(byteBuffer);
-
-        // J'écrit le record dans le buffer
-        record.writeToBuffer(byteBuffer, positionDebut);
-
-        // Je vais mettre à jour l'espace disponible
-        byteBuffer.position(DBParams.SGBDPageSize - 4);
-        byteBuffer.putInt(positionDebut + tailleRecord);
-
-        // Je vais mettre à jour le nombre d'entrée M
-        int m = nombreEntree(byteBuffer);
-        byteBuffer.position(DBParams.SGBDPageSize - 8);
-        byteBuffer.putInt(m + 1);
-
-        // Je vais rajouter un slot directory
-        int decalage = 8 + (m + 1) * 8;
-
-        byteBuffer.position(DBParams.SGBDPageSize - decalage);
-        byteBuffer.putInt(positionDebut);
-        byteBuffer.putInt(tailleRecord);
-
-        bm.FreePage(pageAvecEspace, true);
-
-        return new RecordId(record);
+      bBer.clear();
+      bm.FreePage(dataPage, false);
+      bBer = bm.GetPage(dataPage);
+      bBer.position(0);
+      fileIdData = bBer.getInt();
+      pageIdData = bBer.getInt();
     }
 
-    // A voir
-    public List<Record> GetAllRecords(TableInfo tabInfo) throws Exception {
-        List<Record> listeRecord = new ArrayList<>();
+    return listeDataPage;
+  }
 
-        List<Record> listeRecordFinal = new ArrayList<>();
+  // A voir
+  // Je vais écrire le record dans une page de données avec assez d'espace (mon
+  // petit test)
+  /**
+   *
+   * @param record
+   * @return
+   * @throws Exception
+   */
+  public RecordId InsertRecordIntoTable(Record record) throws Exception {
+    BufferManager bm = BufferManager.getInstance();
 
-        List<PageId> listeDataPage = new ArrayList<>();
+    // Je récupère la taille du record
+    int tailleRecord = record.writeToBuffer(
+      ByteBuffer.allocate(DBParams.SGBDPageSize),
+      0
+    );
 
-        // Je récuprère toutes les dataPages
-        listeDataPage = getDataPages(tabInfo);
+    // Obtenir la datapage avec assez d'espace
+    PageId pageAvecEspace = getFreeDatPageId(
+      record.getTableInfo(),
+      tailleRecord
+    );
 
-        // Je parcours la liste des pages de données
-        for (int i = 0; i < listeDataPage.size(); i++) {
-            listeRecord = getRecordsInDataPage(tabInfo, listeDataPage.get(i));
+    ByteBuffer byteBuffer = bm.GetPage(pageAvecEspace);
 
-            // Je parcours la liste des records d'une page data
-            for (int j = 0; j < listeRecord.size(); j++) {
-                // Je rajoute un record dans ma liste de retour si la tableInfo est égale à
-                // celle en paramètre
-                    listeRecordFinal.add(listeRecord.get(j));
+    int positionDebut = positionEcritureRecord(byteBuffer);
 
-            }
-        }
+    // J'écrit le record dans le buffer
+    record.writeToBuffer(byteBuffer, positionDebut);
 
-        return listeRecordFinal;
+    // Je vais mettre à jour l'espace disponible
+    byteBuffer.position(DBParams.SGBDPageSize - 4);
+    byteBuffer.putInt(positionDebut + tailleRecord);
+
+    // Je vais mettre à jour le nombre d'entrée M
+    int m = nombreEntree(byteBuffer);
+    byteBuffer.position(DBParams.SGBDPageSize - 8);
+    byteBuffer.putInt(m + 1);
+
+    // Je vais rajouter un slot directory
+    int decalage = 8 + (m + 1) * 8;
+
+    byteBuffer.position(DBParams.SGBDPageSize - decalage);
+    byteBuffer.putInt(positionDebut);
+    byteBuffer.putInt(tailleRecord);
+
+    bm.FreePage(pageAvecEspace, true);
+
+    return new RecordId(record);
+  }
+
+  // A voir
+  public List<Record> GetAllRecords(TableInfo tabInfo) throws Exception {
+    List<Record> listeRecord = new ArrayList<>();
+
+    List<Record> listeRecordFinal = new ArrayList<>();
+
+    List<PageId> listeDataPage = new ArrayList<>();
+
+    // Je récuprère toutes les dataPages
+    listeDataPage = getDataPages(tabInfo);
+
+    // Je parcours la liste des pages de données
+    for (int i = 0; i < listeDataPage.size(); i++) {
+      listeRecord = getRecordsInDataPage(tabInfo, listeDataPage.get(i));
+
+      // Je parcours la liste des records d'une page data
+      for (int j = 0; j < listeRecord.size(); j++) {
+        // Je rajoute un record dans ma liste de retour si la tableInfo est égale à
+        // celle en paramètre
+        listeRecordFinal.add(listeRecord.get(j));
+      }
     }
 
+    return listeRecordFinal;
+  }
 }

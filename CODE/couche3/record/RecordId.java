@@ -2,6 +2,10 @@ package CODE.couche3.record;
 
 import CODE.page.PageId;
 
+
+/**
+ * 
+ */
 public class RecordId {
 
     /**
@@ -17,6 +21,11 @@ public class RecordId {
     private int slotIdx;
 
 
+    /**
+     * 
+     * @param id
+     * @param idx
+     */
     public RecordId(PageId id, int idx) {
 
         this.pageId = id;
@@ -24,22 +33,42 @@ public class RecordId {
     }
 
 
+    /**
+     * 
+     * @param record
+     */
     public RecordId(Record record) {
     }
 
 
+    /**
+     * 
+     * @return
+     */
     public PageId getPageId() {
         return this.pageId;
     }
 
+    /**
+     * 
+     * @param pageId
+     */
     public void setPageId(PageId pageId) {
         this.pageId = pageId;
     }
 
+    /**
+     * 
+     * @return
+     */
     public int getSlotIdx() {
         return this.slotIdx;
     }
 
+    /**
+     * 
+     * @param slotIdx
+     */
     public void setSlotIdx(int slotIdx) {
         this.slotIdx = slotIdx;
     }

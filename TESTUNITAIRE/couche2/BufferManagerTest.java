@@ -67,6 +67,18 @@ public class BufferManagerTest {
   }
 
   @Test
+  public void pageExist() {
+    init();
+    PageId page = dm.AllocPage();
+    PageId page2 = dm.AllocPage();
+    bm.GetPage(page);
+    bm.GetPage(page2);
+
+    assertEquals(0, bm.exist_pageId(page));
+    assertEquals(1, bm.exist_pageId(page2));
+  }
+
+  @Test
   public void poolVideTest() {
     init();
     assertTrue(bm.pool_vide());
@@ -93,7 +105,7 @@ public class BufferManagerTest {
     bm.GetPage(page2);
     bm.GetPage(page3);
     bm.FreePage(page2, false);
-    
+
     assertEquals(1, bm.lfu());
   }
 }
