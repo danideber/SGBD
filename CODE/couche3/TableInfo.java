@@ -72,6 +72,17 @@ public class TableInfo implements Serializable {
     this.headerPageId = pageId;
   }
 
+
+  public TableInfo(String nom, int nb,  PageId pageId)
+  throws NullPointerException {
+  if (nom == null  || pageId == null) {
+    throw new NullPointerException();
+  }
+  this.nom_rel = nom.toUpperCase();
+  this.nb_col = nb;
+  this.headerPageId = pageId;
+}
+
   /**
    * Méthode renvoyant le nom d'une relation
    * @return

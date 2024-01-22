@@ -103,7 +103,7 @@ public class BufferManager {
       all_frames[indice].setBuffer(buff);
       all_frames[indice].setPin_count(1);
 
-      return all_frames[indice].getBuffer();
+      return all_frames[indice].getBuffer().flip();
     }
 
     return null;
@@ -134,11 +134,13 @@ public class BufferManager {
       all_frames[indice].decrePinCount();
 
       //Si le dirty au niveau de la frame n'est pas true, on le fait passer à true
-      if(!all_frames[indice].isDirty()){
+      if(!all_frames[indice].isDirty() && valdirty==true){
         all_frames[indice].setDirty(valdirty);
       }
 
     }
+
+
   }
 
   /**

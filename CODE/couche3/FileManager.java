@@ -190,7 +190,6 @@ public class FileManager {
   }
 
   /**
-   * ---------------------------------------- A continuer ----------------------------------------------
    * Cette méthode devra rajouter une page de données « vide » au Heap File
    * correspondant à la relation
    * identifiée par tabInfo, et retourner le PageId de cette page.
@@ -225,7 +224,7 @@ public class FileManager {
     pageIx = bHeader.getInt();
 
     ByteBuffer bfData = bm.GetPage(dataPage);
-    // Ecrire
+   
 
     fileIdData = dataPage.getFileIdx();
     pageIxData = dataPage.getPageIdx();
@@ -261,13 +260,13 @@ public class FileManager {
     bfData.putInt(8);
 
     bm.FreePage(dataPage, true);
-    bm.FreePage(tabInfo.getHeaderPage(), true);
 
     return dataPage;
   }
 
   /**
-   *
+   *Méthode permettant de trouver une page avec sizeRecord espace
+   * 
    * @param tableInfo
    * @param sizeRecord
    * @return
@@ -277,44 +276,7 @@ public class FileManager {
     throws Exception {
     BufferManager bm = BufferManager.getInstance();
 
-    // PageId dataPage = null;
-    // int fileIdData = 0;
-    // int pageIdData = 0;
-
-    // // Je récupère la header page
-    // ByteBuffer bBer = bm.GetPage(tableInfo.getHeaderPage());
-    // bBer.position(0);
-    // fileIdData = bBer.getInt();
-    // pageIdData = bBer.getInt();
-
-    // if (fileIdData == -1 && pageIdData == -1) {
-    //     PageId nouvPage = addDataPage(tableInfo);
-    //     tableInfo.setHeaderPage(nouvPage);
-    //     return nouvPage;
-    //     // return addDataPage(tableInfo);
-    // }
-
-    // int espaceDis = 0;
-
-    // do {
-    //     dataPage = new PageId(fileIdData, pageIdData);
-    //     espaceDis = espaceDispo(dataPage, bBer);
-    //     if (espaceDis >= sizeRecord) {
-    //         System.out.println("ici");
-    //         bm.FreePage(tableInfo.getHeaderPage(), false);
-    //         break;
-    //     }
-    //     else{
-    //         System.out.println("uhhuhu");
-    //     }
-    //     bBer.clear();
-    //     bm.FreePage(dataPage, false);
-    //     bBer = bm.GetPage(dataPage);
-    //     bBer.position(0);
-    //     fileIdData = bBer.getInt();
-    //     pageIdData = bBer.getInt();
-
-    // } while (fileIdData != -1 && pageIdData != -1);
+    
     PageId headerPage = tableInfo.getHeaderPage();
     ByteBuffer headerByte = bm.GetPage(headerPage);
     headerByte.position(0);
@@ -323,12 +285,15 @@ public class FileManager {
 
     bm.FreePage(headerPage, false);
 
+    if (fileId==-1 && pageId==-1) {
+      return addDataPage(tableInfo);
+    }
+
     while (fileId != -1 && pageId != -1) {
       PageId dataPageId = new PageId(fileId, pageId);
       ByteBuffer dataPageByte = bm.GetPage(dataPageId);
 
-      int m = nombreEntree(dataPageByte);
-      System.out.println("m: " + m);
+  
 
       int espaceDis = espaceDispo(dataPageId, bm);
       bm.FreePage(dataPageId, false);
@@ -336,7 +301,10 @@ public class FileManager {
       if (espaceDis >= sizeRecord) {
         return dataPageId;
       } else {
-        return fm.addDataPage(tableInfo);
+        dataPageByte.position(0);
+        fileId=dataPageByte.getInt();
+        pageId=dataPageByte.getInt();
+
       }
     }
 
@@ -344,9 +312,9 @@ public class FileManager {
   }
 
   /**
-   *
-   * @param record
-   * @param pageId
+   * Méthode permettant d'écrire un record dans une dataPage
+   * @param record record à écrire
+   * @param pageId page dans laquelle le record sera écrit
    * @return
    * @throws Exception
    */
@@ -367,10 +335,10 @@ public class FileManager {
   }
 
   /**
-   *
-   * @param tabInfo
-   * @param pageId
-   * @return
+   * Méthode permettant de récupérer tous les records dans une page de données
+   * @param tabInfo instance de TableInfo
+   * @param pageId instance d'une PageId
+   * @return Liste des records d'une tableInfo stockés dans une page
    */
   public List<Record> getRecordsInDataPage(TableInfo tabInfo, PageId pageId) {
     List<Record> listeRecord = new ArrayList<>();
@@ -384,7 +352,6 @@ public class FileManager {
     byteBuff = buffManag.GetPage(pageId);
     byteBuffRecup = byteBuff;
 
-    byteBuff.position(8);
 
     positionRecup = DBParams.SGBDPageSize - 8;
     int iteration = nombreEntree(byteBuffRecup);
@@ -466,7 +433,7 @@ public class FileManager {
   /**
    *
    * @param record
-   * @return
+   * @return 
    * @throws Exception
    */
   public RecordId InsertRecordIntoTable(Record record) throws Exception {
