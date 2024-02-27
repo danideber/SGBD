@@ -41,27 +41,46 @@ public class SelectCommande implements ICommande {
     this.libCommande = commande.toUpperCase();
     if (comValide()) {
       this.nomRelation = this.libCommande.split(" ")[3];
-      this.listeCondition = new ArrayList<>();
+      this.listeCondition = listeCondCondition();
       this.listeRecordsValide = new ArrayList<>();
     }
   }
 
+  /**
+   * 
+   * @return
+   */
   public String getLibCommande() {
     return this.libCommande;
   }
 
+  /**
+   * 
+   * @return
+   */
   public String getNomRelation() {
     return this.nomRelation;
   }
 
+  /**
+   * 
+   * @return
+   */
   public List<String> getListCondition() {
     return this.listeCondition;
   }
 
+  /**
+   * 
+   * @return
+   */
   public List<String> getListeRecValide() {
     return this.listeRecordsValide;
   }
 
+  /**
+   * 
+   */
   @Override
   public void parsingCom() {
     String[] tabCommande = this.libCommande.split(" ");
@@ -78,6 +97,10 @@ public class SelectCommande implements ICommande {
     }
   }
 
+
+  /**
+   * 
+   */
   @Override
   public boolean comValide() {
     if (this.libCommande.split(" ").length == 1) {
@@ -95,6 +118,12 @@ public class SelectCommande implements ICommande {
     return true;
   }
 
+  /**
+   * 
+   * @param indiceCond
+   * @param libCondition
+   * @return
+   */
   public String affectCondition(int indiceCond, String libCondition) {
     // Récupere la bonne condition
     if (listeCondition.get(indiceCond).contains("<>")) {
@@ -120,12 +149,16 @@ public class SelectCommande implements ICommande {
   public String getLibCond() {
     StringBuilder sb = new StringBuilder();
 
-    for (int i = 5; i < this.libCommande.split(" ").length; i++) {
+    for (int i = 3; i < this.libCommande.split(" ").length; i+=2) {
       sb.append(this.libCommande.split(" ")[i] + " ");
     }
     return sb.toString();
   }
 
+  /**
+   * 
+   * @return
+   */
   public List<String> listeCondCondition() {
     List<String> conditions = new ArrayList<>();
     for (int i = 0; i < getLibCond().split(" ").length; i++) {
@@ -134,6 +167,67 @@ public class SelectCommande implements ICommande {
     return conditions;
   }
 
+  /**
+   * Méthode permettant d'exécuter un select lorsqu'il ya une condition
+   * @throws Exception
+   */
+  public void ExecuteSelCond() throws Exception {
+    DatabaseInfo dbInfo = DatabaseInfo.getInstance();
+    TableInfo tableInfo = dbInfo.GetTableInfo(nomRelation);
+    FileManager fileManage = FileManager.getInstance();
+
+    List<Record> listeRecord = fileManage.GetAllRecords(tableInfo);
+
+
+    for (Record record : listeRecord) {
+      record.getTableInfo().getCol_info().
+      for (int i = 0; i < this.listeCondition.size(); i++) {
+        String libCond = "";
+        affectCondition(i, libCond);
+      } 
+    }
+  }
+
+  /**
+   * Méthode permettant de vérifier si un record respecte une condition donnée. 
+   * Elle renvoit true si le résultat est positif et false dans le cas contraire.
+   * @param libCond l'opérateur de la condition
+   * @param indCond l'indice de la condition dans la liste 
+   * @param listeRecord la liste des records
+   * @param indRec l'indice du record dans la liste
+   * @return
+   */
+  public boolean comparRec(
+    String libCond,
+    int indCond,
+    List<Record> listeRecord,
+    int indRec
+  ) {
+    switch (libCond) {
+      case "=":
+        {
+          return (
+            listeRecord
+              .get(indRec)
+              .equals(this.listeCondition.get(indCond).split("=")[1])
+          );
+        }
+        case "<>":
+        {
+          return (
+            !listeRecord
+              .get(indRec)
+              .equals(this.listeCondition.get(indCond).split("=")[1])
+          );
+        }
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * 
+   */
   @Override
   public void Execute() throws Exception {
     DatabaseInfo dbInfo = DatabaseInfo.getInstance();
@@ -153,194 +247,22 @@ public class SelectCommande implements ICommande {
               listeRecord.get(i).getRecvalues().toString()
             );
         }
-      } else {
-        String libCondition = "";
-        String libColonneCondition = "";
-        String libValCondition = "";
-
-        Boolean indBool = true;
-
-        for (
-          int indiceCond = 0;
-          indiceCond < listeCondition.size();
-          indiceCond++
-        ) {
-          if (!indBool) {
-            break;
-          }
-          libCondition = affectCondition(indiceCond, libCondition);
-
-          // Récupérer le libéllé de la colonne
-          libColonneCondition =
-            listeCondition.get(indiceCond).split(libCondition)[0];
-
-          // Récupérer la valeur de la colonne
-          libValCondition =
-            listeCondition.get(indiceCond).split(libCondition)[1];
-
-          // Recherger à garder le record parfait
-          // Récupérer le record en entier
-          for (
-            int indexVal = 0;
-            indexVal < listeRecord.get(i).getRecvalues().size();
-            indexVal++
-          ) {
-            if (indexVal == tableInfo.indexCol(libColonneCondition)) {
-              if (libCondition.equals("=")) {
-                if (
-                  libValCondition
-                    .trim()
-                    .equals(
-                      listeRecord
-                        .get(i)
-                        .getRecvalues()
-                        .get(tableInfo.indexCol(libColonneCondition))
-                        .trim()
-                    )
-                ) {
-                  indBool = true;
-                } else {
-                  indBool = false;
-                  break;
-                }
-              } else if (libCondition.equals("<>")) {
-                if (
-                  !libValCondition
-                    .trim()
-                    .equals(
-                      listeRecord
-                        .get(i)
-                        .getRecvalues()
-                        .get(tableInfo.indexCol(libColonneCondition))
-                        .trim()
-                    )
-                ) {
-                  indBool = true;
-                } else {
-                  indBool = false;
-                  break;
-                }
-              } else if (libCondition.equals(">")) {
-                try {
-                  if (
-                    Double.parseDouble(
-                      listeRecord
-                        .get(i)
-                        .getRecvalues()
-                        .get(tableInfo.indexCol(libColonneCondition))
-                        .trim()
-                    ) >
-                    Double.parseDouble(libValCondition.trim())
-                  ) {
-                    indBool = true;
-                  } else {
-                    indBool = false;
-                    break;
-                  }
-                } catch (Exception e) {
-                  if (
-                    libValCondition.trim().length() >
-                    (
-                      listeRecord
-                        .get(i)
-                        .getRecvalues()
-                        .get(tableInfo.indexCol(libColonneCondition))
-                        .trim()
-                        .length()
-                    )
-                  ) {
-                    indBool = true;
-                  } else {
-                    indBool = false;
-                    break;
-                  }
-                }
-              } else if (libCondition.equals("<")) {
-                try {
-                  if (
-                    Double.parseDouble(
-                      listeRecord
-                        .get(i)
-                        .getRecvalues()
-                        .get(tableInfo.indexCol(libColonneCondition))
-                        .trim()
-                    ) <
-                    Double.parseDouble(libValCondition.trim())
-                  ) {
-                    indBool = true;
-                  } else {
-                    indBool = false;
-                    break;
-                  }
-                } catch (Exception e) {
-                  if (
-                    libValCondition
-                      .trim()
-                      .compareTo(
-                        listeRecord
-                          .get(i)
-                          .getRecvalues()
-                          .get(tableInfo.indexCol(libColonneCondition))
-                          .trim()
-                      ) <
-                    0
-                  ) {
-                    indBool = true;
-                  } else {
-                    indBool = false;
-                    break;
-                  }
-                }
-              } else if (libCondition.equals("<=")) {
-                if (
-                  Double.parseDouble(
-                    listeRecord
-                      .get(i)
-                      .getRecvalues()
-                      .get(tableInfo.indexCol(libColonneCondition))
-                      .trim()
-                  ) <=
-                  Double.parseDouble(libValCondition.trim())
-                ) {
-                  indBool = true;
-                } else {
-                  indBool = false;
-                  break;
-                }
-              } else if (libCondition.equals(">=")) {
-                if (
-                  Double.parseDouble(
-                    listeRecord
-                      .get(i)
-                      .getRecvalues()
-                      .get(tableInfo.indexCol(libColonneCondition))
-                      .trim()
-                  ) >=
-                  Double.parseDouble(libValCondition.trim())
-                ) {
-                  indBool = true;
-                } else {
-                  indBool = false;
-                  break;
-                }
-              }
-            }
-          }
+        else{
+          ExecuteSelCond();
         }
-
-        if (indBool) {
-          this.listeRecordsValide.add(
-              listeRecord.get(i).getRecvalues().toString()
-            );
-        }
-      }
+      } 
     }
     affiche(this.listeRecordsValide);
   }
 
+  /**
+   * Méthode permettant d'afficher les records
+   * @param listeRecordValide liste des records
+   */
   public void affiche(List<String> listeRecordValide) {
     for (String record : this.listeRecordsValide) {
       System.out.println(record);
     }
   }
+
 }
