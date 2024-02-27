@@ -101,16 +101,13 @@ public class FileManagerTest {
 
     record1.setRecvalues(recVal);
 
-
     ByteBuffer byteBuffer3 = bm.GetPage(pageId);
     int fileId2 = 0, pageId2 = 0;
 
     fileId2 = byteBuffer3.getInt();
     pageId2 = byteBuffer3.getInt();
-    
-    assertTrue(fileId2==-1 &&
-    pageId2==-1
-    );
+
+    assertTrue(fileId2 == -1 && pageId2 == -1);
 
     ByteBuffer byteBuffer2 = bm.GetPage(pageId);
     byteBuffer2.position(0);
@@ -118,7 +115,14 @@ public class FileManagerTest {
     fileManager.InsertRecordIntoTable(record1);
     fileManager.InsertRecordIntoTable(record1);
 
-  
+    assertEquals(
+      fileManager.nombreEntree(
+        bm.GetPage(fileManager.getFreeDatPageId(tableInfo, 2))
+      ),
+      2
+    );
     assertEquals(fileManager.GetAllRecords(tableInfo).size(), 2);
   }
+
+
 }

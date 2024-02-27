@@ -53,6 +53,39 @@ public class BufferManagerTest {
   }
 
   @Test
+  public void getManyPage() {
+    init();
+    PageId page1 = dm.AllocPage();
+    PageId page2 = dm.AllocPage();
+    PageId page3 = dm.AllocPage();
+    PageId page4 = dm.AllocPage();
+    ByteBuffer byteBuffer1 = bm.GetPage(page1);
+
+    byteBuffer1.position(0);
+    byteBuffer1.putInt(-1);
+    byteBuffer1.putInt(-1);
+    bm.FreePage(page1, true);
+
+    ByteBuffer byteBuffer2 = bm.GetPage(page2);
+    byteBuffer2.position(0);
+    byteBuffer2.putInt(-1);
+    byteBuffer2.putInt(-1);
+    bm.FreePage(page2, true);
+
+    ByteBuffer byteBuffer3 = bm.GetPage(page3);
+    byteBuffer3.position(0);
+    byteBuffer3.putInt(-1);
+    byteBuffer3.putInt(-1);
+    bm.FreePage(page3, true);
+
+    ByteBuffer byteBuffer4 = bm.GetPage(page4);
+    byteBuffer4.position(0);
+    byteBuffer4.putInt(-1);
+    byteBuffer4.putInt(-1);
+    bm.FreePage(page4, true);
+  }
+
+  @Test
   public void getPageFlushTest() throws Exception {
     init();
     PageId page = dm.AllocPage();

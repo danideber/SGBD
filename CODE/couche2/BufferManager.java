@@ -103,7 +103,7 @@ public class BufferManager {
       all_frames[indice].setBuffer(buff);
       all_frames[indice].setPin_count(1);
 
-      return all_frames[indice].getBuffer().flip();
+      return all_frames[indice].getBuffer();
     }
 
     return null;
