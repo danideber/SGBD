@@ -39,11 +39,11 @@ public class SelectCondTest {
     InsertCommande ic1 = new InsertCommande("insert into num values (1)");
     ic1.Execute();
 
-    SelectCommande sc = new SelectCommande("select * from num=1");
+    SelectCommande sc = new SelectCommande("select * from num where id=1");
 
     assertEquals(sc.getListCondition().size(), 1);
 
-    assertEquals(sc.getListCondition().get(0), "NUM=1");
+    assertEquals(sc.getListCondition().get(0), "ID=1");
   }
 
 
@@ -57,14 +57,114 @@ public class SelectCondTest {
     InsertCommande ic1 = new InsertCommande("insert into num values (1,ad)");
     ic1.Execute();
 
-    SelectCommande sc = new SelectCommande("select * from num=1 and nom=a");
+    SelectCommande sc = new SelectCommande("select * from num where id=1 and nom=a");
 
     assertEquals(sc.getListCondition().size(), 2);
 
-    assertEquals(sc.getListCondition().get(0), "NUM=1");
+    assertEquals(sc.getListCondition().get(0), "ID=1");
 
     assertEquals(sc.getListCondition().get(1), "NOM=A");
   }
 
-  
-}
+  @Test
+  public void condEqualIntTest() throws Exception{
+    init();
+    CreateTable ct1 = new CreateTable("CREATE TABLE NUM (id:int)");
+    ct1.Execute();
+
+    InsertCommande ic1 = new InsertCommande("insert into num values (1)");
+    ic1.Execute();
+
+    SelectCommande sc = new SelectCommande("select * from num where id=1");
+    sc.Execute();
+
+    assertEquals(sc.getListeRecValide().size(), 1);
+    assertEquals(sc.getListeRecValide().get(0), "1");
+
+  }
+
+  @Test
+  public void condEqualFloatTest() throws Exception{
+    init();
+    CreateTable ct1 = new CreateTable("CREATE TABLE NUM (id:float)");
+    ct1.Execute();
+
+    InsertCommande ic1 = new InsertCommande("insert into num values (7.5)");
+    ic1.Execute();
+
+    SelectCommande sc = new SelectCommande("select * from num where id=7.5");
+    sc.Execute();
+
+    assertEquals(sc.getListeRecValide().size(), 1);
+    assertEquals(sc.getListeRecValide().get(0), "7.5");
+
+  }
+
+  @Test
+  public void condEqualStringTest() throws Exception{
+    init();
+    CreateTable ct1 = new CreateTable("CREATE TABLE Etudiant (id:string(8))");
+    ct1.Execute();
+
+    InsertCommande ic1 = new InsertCommande("insert into etudiant values (daniel)");
+    ic1.Execute();
+
+    InsertCommande ic2 = new InsertCommande("insert into etudiant values (dani)");
+    ic2.Execute();
+
+    SelectCommande sc = new SelectCommande("select * from etudiant where id=daniel");
+    sc.Execute();
+
+    assertEquals(sc.getListeRecValide().size(), 1);
+    assertEquals(sc.getListeRecValide().get(0), "DANIEL");
+
+    SelectCommande sc1 = new SelectCommande("select * from etudiant where id=dani");
+    sc1.Execute();
+
+    assertEquals(sc1.getListeRecValide().size(), 1);
+    assertEquals(sc1.getListeRecValide().get(0), "DANI");
+
+  }
+
+  @Test
+  public void condEqualVarStringTest() throws Exception{
+    init();
+    CreateTable ct1 = new CreateTable("CREATE TABLE NUM (id:int)");
+    ct1.Execute();
+
+    InsertCommande ic1 = new InsertCommande("insert into num values (1)");
+    ic1.Execute();
+
+    SelectCommande sc = new SelectCommande("select * from num where id=1");
+    sc.Execute();
+
+    assertEquals(sc.getListeRecValide().size(), 1);
+    assertEquals(sc.getListeRecValide().get(0), "[1]");
+
+  }
+
+
+  @Test
+  public void condNotEqualIntTest() throws Exception{
+    init();
+    CreateTable ct1 = new CreateTable("CREATE TABLE NUM (id:int)");
+    ct1.Execute();
+
+    InsertCommande ic1 = new InsertCommande("insert into num values (1)");
+    ic1.Execute();
+
+    InsertCommande ic2 = new InsertCommande("insert into num values (7)");
+    ic2.Execute();
+
+    InsertCommande ic3 = new InsertCommande("insert into num values (9)");
+    ic3.Execute();
+
+    SelectCommande sc = new SelectCommande("select * from num where id<>1");
+    sc.Execute();
+
+  }
+
+  }
+
+
+

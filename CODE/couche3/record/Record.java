@@ -36,6 +36,7 @@ public class Record {
 
 	}
 
+
 	/**
 	 * 
 	 * @param tableInfo

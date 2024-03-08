@@ -47,7 +47,7 @@ public class SelectCommande implements ICommande {
   }
 
   /**
-   * 
+   *
    * @return
    */
   public String getLibCommande() {
@@ -55,7 +55,7 @@ public class SelectCommande implements ICommande {
   }
 
   /**
-   * 
+   *
    * @return
    */
   public String getNomRelation() {
@@ -63,7 +63,7 @@ public class SelectCommande implements ICommande {
   }
 
   /**
-   * 
+   *
    * @return
    */
   public List<String> getListCondition() {
@@ -71,7 +71,7 @@ public class SelectCommande implements ICommande {
   }
 
   /**
-   * 
+   *
    * @return
    */
   public List<String> getListeRecValide() {
@@ -79,7 +79,7 @@ public class SelectCommande implements ICommande {
   }
 
   /**
-   * 
+   *
    */
   @Override
   public void parsingCom() {
@@ -97,9 +97,8 @@ public class SelectCommande implements ICommande {
     }
   }
 
-
   /**
-   * 
+   *
    */
   @Override
   public boolean comValide() {
@@ -119,7 +118,7 @@ public class SelectCommande implements ICommande {
   }
 
   /**
-   * 
+   *
    * @param indiceCond
    * @param libCondition
    * @return
@@ -149,14 +148,14 @@ public class SelectCommande implements ICommande {
   public String getLibCond() {
     StringBuilder sb = new StringBuilder();
 
-    for (int i = 3; i < this.libCommande.split(" ").length; i+=2) {
+    for (int i = 5; i < this.libCommande.split(" ").length; i += 2) {
       sb.append(this.libCommande.split(" ")[i] + " ");
     }
     return sb.toString();
   }
 
   /**
-   * 
+   *
    * @return
    */
   public List<String> listeCondCondition() {
@@ -178,47 +177,78 @@ public class SelectCommande implements ICommande {
 
     List<Record> listeRecord = fileManage.GetAllRecords(tableInfo);
 
-
     for (Record record : listeRecord) {
-      record.getTableInfo().getCol_info().
       for (int i = 0; i < this.listeCondition.size(); i++) {
         String libCond = "";
-        affectCondition(i, libCond);
-      } 
+        libCond = affectCondition(i, libCond);
+
+        boolean conValid = comparRec(libCond, record);
+
+        if (conValid) {
+          String recVal=record.getRecvalues().toString();
+          String reValFormatted=recVal.substring(1, recVal.length()-1);
+          listeRecordsValide.add(reValFormatted.trim());
+        }
+      }
     }
   }
 
   /**
-   * Méthode permettant de vérifier si un record respecte une condition donnée. 
+   * Méthode permettant de vérifier si un record respecte une condition donnée.
    * Elle renvoit true si le résultat est positif et false dans le cas contraire.
    * @param libCond l'opérateur de la condition
-   * @param indCond l'indice de la condition dans la liste 
+   * @param indCond l'indice de la condition dans la liste
    * @param listeRecord la liste des records
    * @param indRec l'indice du record dans la liste
    * @return
    */
-  public boolean comparRec(
-    String libCond,
-    int indCond,
-    List<Record> listeRecord,
-    int indRec
-  ) {
+  public boolean comparRec(String libCond, Record records) {
+    String nomCol = listeCondition.get(0).split("=")[0];
+    int indCol = records.getTableInfo().getIndiceCol(nomCol);
+    String recVal = records.getRecvalues().get(indCol).trim();
+    String recValFromCond = listeCondition.get(0).split("=")[1];
     switch (libCond) {
       case "=":
         {
-          return (
-            listeRecord
-              .get(indRec)
-              .equals(this.listeCondition.get(indCond).split("=")[1])
-          );
+          return (recVal.equals(recValFromCond));
         }
-        case "<>":
+      case "<>":
         {
-          return (
-            !listeRecord
-              .get(indRec)
-              .equals(this.listeCondition.get(indCond).split("=")[1])
-          );
+          return (!recVal.equals(recValFromCond));
+        }
+      case ">":
+        {
+          if (
+            records
+              .getTableInfo()
+              .getCol_info()
+              .get(indCol)
+              .getType_col()
+              .contains("STRING")
+          ) {
+            return (recVal.compareTo(recValFromCond)>0);
+          } else {
+            Double recValNum = Double.parseDouble(recVal);
+            Double recValFromCondNum = Double.parseDouble(recValFromCond);
+            return (recValNum > recValFromCondNum);
+          }
+        }
+        case "<":
+        {
+          if (
+            records
+              .getTableInfo()
+              .getCol_info()
+              .get(indCol)
+              .getType_col()
+              .contains("STRING")
+          ) {
+            return (recVal.compareTo(recValFromCond)<0);
+          } else {
+            Double recValNum = Double.parseDouble(recVal);
+            Double recValFromCondNum = Double.parseDouble(recValFromCond);
+            return (recValNum < recValFromCondNum);
+          }
         }
       default:
         return false;
@@ -226,7 +256,7 @@ public class SelectCommande implements ICommande {
   }
 
   /**
-   * 
+   *
    */
   @Override
   public void Execute() throws Exception {
@@ -244,13 +274,13 @@ public class SelectCommande implements ICommande {
         // Si on a pas de condition
         if (listeCondition.size() == 0) {
           this.listeRecordsValide.add(
-              listeRecord.get(i).getRecvalues().toString()
+              listeRecord.get(i).getRecvalues().toString().trim()
             );
-        }
-        else{
+        } else {
           ExecuteSelCond();
+          return;
         }
-      } 
+      }
     }
     affiche(this.listeRecordsValide);
   }
@@ -264,5 +294,4 @@ public class SelectCommande implements ICommande {
       System.out.println(record);
     }
   }
-
 }
