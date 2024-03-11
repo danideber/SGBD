@@ -194,6 +194,60 @@ public class SelectCommande implements ICommande {
   }
 
   /**
+   * Méthode permettant de renvoyer le nom d'une colonne à partir d'une condition donnée
+   * @param listeCondition
+   * @return la nom de la colonne
+   */
+  public String getNomColFromCond(String condition){
+    if (condition.contains("<>")) {
+      return condition.split("<>")[0];
+    }
+    else if (condition.contains("<=")) {
+      return condition.split("<=")[0];
+    }
+    else if (condition.contains(">=")) {
+      return condition.split(">=")[0];
+    }
+    else if (condition.contains("<")) {
+      return condition.split("<")[0];
+    }
+    else if (condition.contains(">")) {
+      return condition.split(">")[0];
+    }
+    else if (condition.contains("=")) {
+      return condition.split("=")[0];
+    }
+    return condition;
+  }
+
+  /**
+   * Méthode permettant d'obtenir la valeur passer en paramètre d'une condition
+   * @param condition
+   * @return
+   */
+  public String getRecValFromCond(String condition){
+    if (condition.contains("<>")) {
+      return condition.split("<>")[1];
+    }
+    else if (condition.contains("<=")) {
+      return condition.split("<=")[1];
+    }
+    else if (condition.contains(">=")) {
+      return condition.split(">=")[1];
+    }
+    else if (condition.contains("<")) {
+      return condition.split("<")[1];
+    }
+    else if (condition.contains(">")) {
+      return condition.split(">")[1];
+    }
+    else if (condition.contains("=")) {
+      return condition.split("=")[1];
+    }
+    return condition;
+  }
+
+  /**
    * Méthode permettant de vérifier si un record respecte une condition donnée.
    * Elle renvoit true si le résultat est positif et false dans le cas contraire.
    * @param libCond l'opérateur de la condition
@@ -203,10 +257,10 @@ public class SelectCommande implements ICommande {
    * @return
    */
   public boolean comparRec(String libCond, Record records) {
-    String nomCol = listeCondition.get(0).split("=")[0];
+    String nomCol = getNomColFromCond(listeCondition.get(0));
     int indCol = records.getTableInfo().getIndiceCol(nomCol);
     String recVal = records.getRecvalues().get(indCol).trim();
-    String recValFromCond = listeCondition.get(0).split("=")[1];
+    String recValFromCond =getRecValFromCond( listeCondition.get(0));
     switch (libCond) {
       case "=":
         {
@@ -216,6 +270,40 @@ public class SelectCommande implements ICommande {
         {
           return (!recVal.equals(recValFromCond));
         }
+      case "<=":{
+        if (
+            records
+              .getTableInfo()
+              .getCol_info()
+              .get(indCol)
+              .getType_col()
+              .contains("STRING")
+          ) {
+            return (recVal.compareTo(recValFromCond)<0 || recVal.equals(recValFromCond));
+          } else {
+            Double recValNum = Double.parseDouble(recVal);
+            Double recValFromCondNum = Double.parseDouble(recValFromCond);
+            return (recValNum <= recValFromCondNum);
+          }
+      }
+
+      case ">=":{
+        if (
+            records
+              .getTableInfo()
+              .getCol_info()
+              .get(indCol)
+              .getType_col()
+              .contains("STRING")
+          ) {
+            return (recVal.compareTo(recValFromCond)>0 || recVal.equals(recValFromCond));
+          } else {
+            Double recValNum = Double.parseDouble(recVal);
+            Double recValFromCondNum = Double.parseDouble(recValFromCond);
+            return (recValNum >= recValFromCondNum);
+          }
+      }
+
       case ">":
         {
           if (
