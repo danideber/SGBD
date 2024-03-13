@@ -378,5 +378,122 @@ public class SelectCondTest {
     assertEquals(sc.getListeRecValide().get(1), "93");
   }
 
+  @Test
+  public void condLowerOrEqualIntTest() throws Exception {
+    init();
+    CreateTable ct1 = new CreateTable("CREATE TABLE NUM (id:int)");
+    ct1.Execute();
+
+    InsertCommande ic1 = new InsertCommande("insert into num values (3)");
+    ic1.Execute();
+
+    InsertCommande ic2 = new InsertCommande("insert into num values (2)");
+    ic2.Execute();
+
+    InsertCommande ic3 = new InsertCommande("insert into num values (93)");
+    ic3.Execute();
+
+    SelectCommande sc = new SelectCommande("select * from num where id<=3");
+    sc.Execute();
+
+    assertEquals(sc.getListeRecValide().size(), 2);
+    assertEquals(sc.getListeRecValide().get(0), "3");
+    assertEquals(sc.getListeRecValide().get(1), "2");
+  }
+
+
+  @Test
+  public void condSuperiorOrEqualFloatTest() throws Exception {
+    init();
+    CreateTable ct1 = new CreateTable("CREATE TABLE NUM (id:float)");
+    ct1.Execute();
+
+    InsertCommande ic1 = new InsertCommande("insert into num values (3.9)");
+    ic1.Execute();
+
+    InsertCommande ic2 = new InsertCommande("insert into num values (20.2)");
+    ic2.Execute();
+
+    InsertCommande ic3 = new InsertCommande("insert into num values (93.0)");
+    ic3.Execute();
+
+    SelectCommande sc = new SelectCommande("select * from num where id>=20.2");
+    sc.Execute();
+
+    assertEquals(sc.getListeRecValide().size(), 2);
+    assertEquals(sc.getListeRecValide().get(0), "20.2");
+    assertEquals(sc.getListeRecValide().get(1), "93.0");
+  }
+
+  @Test
+  public void condLowerOrEqualFloatTest() throws Exception {
+    init();
+    CreateTable ct1 = new CreateTable("CREATE TABLE NUM (id:float)");
+    ct1.Execute();
+
+    InsertCommande ic1 = new InsertCommande("insert into num values (2.3)");
+    ic1.Execute();
+
+    InsertCommande ic2 = new InsertCommande("insert into num values (2.2)");
+    ic2.Execute();
+
+    InsertCommande ic3 = new InsertCommande("insert into num values (3)");
+    ic3.Execute();
+
+    SelectCommande sc = new SelectCommande("select * from num where id<=2.3");
+    sc.Execute();
+
+    assertEquals(sc.getListeRecValide().size(), 2);
+    assertEquals(sc.getListeRecValide().get(0), "2.3");
+    assertEquals(sc.getListeRecValide().get(1), "2.2");
+  }
+
+
+  @Test
+  public void condSuperiorOrEqualStringTest() throws Exception {
+    init();
+    CreateTable ct1 = new CreateTable("CREATE TABLE NUM (id:string(4))");
+    ct1.Execute();
+
+    InsertCommande ic1 = new InsertCommande("insert into num values (da)");
+    ic1.Execute();
+
+    InsertCommande ic2 = new InsertCommande("insert into num values (de)");
+    ic2.Execute();
+
+    InsertCommande ic3 = new InsertCommande("insert into num values (e)");
+    ic3.Execute();
+
+    SelectCommande sc = new SelectCommande("select * from num where id>=de");
+    sc.Execute();
+
+    assertEquals(sc.getListeRecValide().size(), 2);
+    assertEquals(sc.getListeRecValide().get(0), "DE");
+    assertEquals(sc.getListeRecValide().get(1), "E");
+  }
+
+  @Test
+  public void condLowerOrEqualStringTest() throws Exception {
+    init();
+    CreateTable ct1 = new CreateTable("CREATE TABLE NUM (id:string(4))");
+    ct1.Execute();
+
+    InsertCommande ic1 = new InsertCommande("insert into num values (da)");
+    ic1.Execute();
+
+    InsertCommande ic2 = new InsertCommande("insert into num values (de)");
+    ic2.Execute();
+
+    InsertCommande ic3 = new InsertCommande("insert into num values (e)");
+    ic3.Execute();
+
+    SelectCommande sc = new SelectCommande("select * from num where id<=de");
+    sc.Execute();
+
+    assertEquals(sc.getListeRecValide().size(), 2);
+    assertEquals(sc.getListeRecValide().get(0), "DA");
+    assertEquals(sc.getListeRecValide().get(1), "DE");
+  }
+
 
 }

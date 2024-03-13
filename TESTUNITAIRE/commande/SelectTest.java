@@ -94,7 +94,7 @@ public class SelectTest {
 
     assertEquals(1, sc.getListeRecValide().size());
 
-    assertEquals("[1]", sc.getListeRecValide().get(0));
+    assertEquals("1", sc.getListeRecValide().get(0));
   }
 
   @Test
@@ -119,8 +119,31 @@ public class SelectTest {
 
     assertEquals(3, sc.getListeRecValide().size());
 
-    assertEquals("[1]", sc.getListeRecValide().get(0));
-    assertEquals("[7]", sc.getListeRecValide().get(1));
-    assertEquals("[97]", sc.getListeRecValide().get(2));
+    assertEquals("1", sc.getListeRecValide().get(0));
+    assertEquals("7", sc.getListeRecValide().get(1));
+    assertEquals("97", sc.getListeRecValide().get(2));
+  }
+
+  @Test
+  public void ExecuteTest3() throws Exception {
+    init();
+    CreateTable ct1 = new CreateTable("CREATE TABLE R (C1:INT,C2:VARSTRING(8),C3:STRING(3),C4:FLOAT)");
+    ct1.Execute();
+
+    InsertCommande ic1 = new InsertCommande("INSERT INTO R VALUES (1,abeille,bla,2.8)");
+    ic1.Execute();
+
+    ic1.setLibCommande("INSERT INTO R VALUES (300,papillon,blu,0.7)");
+    ic1.Execute();
+
+    SelectCommande sc = new SelectCommande("select * from r");
+    assertDoesNotThrow(() -> {
+      sc.Execute();
+    });
+
+    assertEquals(2, sc.getListeRecValide().size());
+
+    assertEquals("1, abeille , bla, 2.8", sc.getListeRecValide().get(0).toLowerCase());
+    assertEquals("300, papillon, blu, 0.7", sc.getListeRecValide().get(1).toLowerCase());
   }
 }

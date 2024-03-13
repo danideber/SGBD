@@ -161,7 +161,10 @@ public class SelectCommande implements ICommande {
   public List<String> listeCondCondition() {
     List<String> conditions = new ArrayList<>();
     for (int i = 0; i < getLibCond().split(" ").length; i++) {
-      conditions.add(getLibCond().split(" ")[i]);
+      String cond=getLibCond().split(" ")[i];
+      if (!cond.equals("")) {
+        conditions.add(getLibCond().split(" ")[i]);
+      }
     }
     return conditions;
   }
@@ -178,17 +181,24 @@ public class SelectCommande implements ICommande {
     List<Record> listeRecord = fileManage.GetAllRecords(tableInfo);
 
     for (Record record : listeRecord) {
+      boolean conValid=false;
       for (int i = 0; i < this.listeCondition.size(); i++) {
         String libCond = "";
         libCond = affectCondition(i, libCond);
 
-        boolean conValid = comparRec(libCond, record);
+        conValid = comparRec(libCond, record,i);
 
-        if (conValid) {
-          String recVal=record.getRecvalues().toString();
-          String reValFormatted=recVal.substring(1, recVal.length()-1);
-          listeRecordsValide.add(reValFormatted.trim());
+        //Dans le cas où une condition est fausse, on sort de la boucle
+        if(!conValid){
+          break;
         }
+
+      }
+
+      if (conValid) {
+        String recVal=record.getRecvalues().toString();
+        String reValFormatted=recVal.substring(1, recVal.length()-1);
+        listeRecordsValide.add(reValFormatted.trim());
       }
     }
   }
@@ -256,11 +266,11 @@ public class SelectCommande implements ICommande {
    * @param indRec l'indice du record dans la liste
    * @return
    */
-  public boolean comparRec(String libCond, Record records) {
-    String nomCol = getNomColFromCond(listeCondition.get(0));
+  public boolean comparRec(String libCond, Record records,int idListCond) {
+    String nomCol = getNomColFromCond(listeCondition.get(idListCond));
     int indCol = records.getTableInfo().getIndiceCol(nomCol);
     String recVal = records.getRecvalues().get(indCol).trim();
-    String recValFromCond =getRecValFromCond( listeCondition.get(0));
+    String recValFromCond =getRecValFromCond( listeCondition.get(idListCond));
     switch (libCond) {
       case "=":
         {
@@ -361,8 +371,10 @@ public class SelectCommande implements ICommande {
       ) {
         // Si on a pas de condition
         if (listeCondition.size() == 0) {
+          String recVal=listeRecord.get(i).getRecvalues().toString();
+        String reValFormatted=recVal.substring(1, recVal.length()-1);
           this.listeRecordsValide.add(
-              listeRecord.get(i).getRecvalues().toString().trim()
+              reValFormatted
             );
         } else {
           ExecuteSelCond();
