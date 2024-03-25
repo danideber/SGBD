@@ -47,39 +47,39 @@ public class SelectCommande implements ICommande {
   }
 
   /**
-   *
-   * @return
+   *Méthode permettant de retourner le libéllé d'une commande
+   * @return le libéllé de la commande
    */
   public String getLibCommande() {
     return this.libCommande;
   }
 
   /**
-   *
-   * @return
+   * Méthode permettant de renvoyer le nom d'une relation
+   * @return le nom de la relation
    */
   public String getNomRelation() {
     return this.nomRelation;
   }
 
   /**
-   *
-   * @return
+   * Méthode permettant d'obtenir la liste des conditions
+   * @return la liste des conditions
    */
   public List<String> getListCondition() {
     return this.listeCondition;
   }
 
   /**
-   *
-   * @return
+   * Méthode permettant d'obtenir la liste des records valides
+   * @return la liste des records valides
    */
   public List<String> getListeRecValide() {
     return this.listeRecordsValide;
   }
 
   /**
-   *
+   * Méthode permettant le formattage d'une commande
    */
   @Override
   public void parsingCom() {
@@ -98,7 +98,7 @@ public class SelectCommande implements ICommande {
   }
 
   /**
-   *
+   * Méthode permettant de vérifier si une commande est valide
    */
   @Override
   public boolean comValide() {
@@ -118,10 +118,10 @@ public class SelectCommande implements ICommande {
   }
 
   /**
-   *
-   * @param indiceCond
-   * @param libCondition
-   * @return
+   * Méthode permettant de retourner le libéllé d'une condition
+   * @param indiceCond l'indice de la condition
+   * @param libCondition le libéllé de la condition
+   * @return le libéllé de la condition
    */
   public String affectCondition(int indiceCond, String libCondition) {
     // Récupere la bonne condition
@@ -155,7 +155,7 @@ public class SelectCommande implements ICommande {
   }
 
   /**
-   *
+   *Méthodes permettant d'obtenir une liste représentant les conditions
    * @return
    */
   public List<String> listeCondCondition() {
@@ -354,7 +354,7 @@ public class SelectCommande implements ICommande {
   }
 
   /**
-   *
+   * Méthode permettant d'exécuter une commande Select
    */
   @Override
   public void Execute() throws Exception {

@@ -164,5 +164,26 @@ public class SelectConMultTest {
     assertEquals(sc.getListeRecValide().get(0), "0, 21");
   }
 
-  
+  @Test
+  public void condSupEqualIntTest() throws Exception {
+    init();
+    CreateTable ct1 = new CreateTable("CREATE TABLE NUM (id:int,age:int)");
+    ct1.Execute();
+
+    InsertCommande ic1 = new InsertCommande("insert into num values (1,20)");
+    ic1.Execute();
+
+    InsertCommande ic2 = new InsertCommande("insert into num values (5,14)");
+    ic2.Execute();
+
+    InsertCommande ic3 = new InsertCommande("insert into num values (0,21)");
+    ic3.Execute();
+
+    SelectCommande sc = new SelectCommande("select * from num where id>=1 and age>=14");
+    sc.Execute();
+
+    assertEquals(sc.getListeRecValide().size(), 2);
+    assertEquals(sc.getListeRecValide().get(0), "1, 20");
+    assertEquals(sc.getListeRecValide().get(1), "5, 14");
+  }
 }
